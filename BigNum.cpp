@@ -246,11 +246,6 @@ struct BigNum {
 		return sizeof(BigNumElement);
 	}
 
-	#define MaxLengthOfAStringified_U64 (20)
-	#define MaxLengthOfAStringified_U32 (10)
-	#define MaxLengthOfAStringified_U16 (5)
-	#define MaxLengthOfAStringified_U8 (3)
-
 	BigNum() {
 		n = (BigNumElement*) calloc(10, sizeof(BigNumElement));
 		MemoryCapacity = 10;
