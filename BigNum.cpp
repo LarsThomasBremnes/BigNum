@@ -9,22 +9,24 @@ Made by Lars Thomas Bremnes
 #include <string>
 
 
-#if BigNumElementSize == 1
-typedef   unsigned char BigNumElement;
-constexpr unsigned char MaxVal = 0xFF;
-#elif BigNumElementSize == 2
-typedef   unsigned short BigNumElement;
-constexpr unsigned short MaxVal = (0xFFFF);
-#elif BigNumElementSize == 4
-typedef   unsigned int BigNumElement;
-constexpr unsigned int MaxVal = (0xFFFFFFFF);
-#elif BigNumElementSize == 8
-typedef	  unsigned __int64 BigNumElement;
-constexpr unsigned __int64 MaxVal = (0xFFFFFFFFFFFFFFFF);
+#ifndef BigNumElementSize
+	typedef	  unsigned __int64 BigNumElement;
+	constexpr unsigned __int64 MaxVal = (0xFFFFFFFFFFFFFFFF);
 #else
-void YaDidItWrong(WhyWouldYouDoThat You) {
-	return Fool;
-}
+	#if BigNumElementSize == 1
+		typedef   unsigned char BigNumElement;
+		constexpr unsigned char MaxVal = 0xFF;
+	#elif BigNumElementSize == 2
+		typedef   unsigned short BigNumElement;
+		constexpr unsigned short MaxVal = (0xFFFF);
+	#elif BigNumElementSize == 4
+		typedef   unsigned int BigNumElement;
+		constexpr unsigned int MaxVal = (0xFFFFFFFF);
+	#else
+		void YaDidItWrong(WhyWouldYouDoThat You) {
+			return Fool;
+		}
+	#endif
 #endif
 
 struct BigNum {
@@ -32,6 +34,8 @@ struct BigNum {
 	unsigned __int64		LogicalSize;
 	unsigned __int64		MemoryCapacity;
 	BigNumElement* n;
+
+
 
 	enum bignum_limits: unsigned __int64 {
 		U64Lim = 0xFFFFFFFFFFFFFFFF
@@ -237,6 +241,11 @@ struct BigNum {
 	#endif
 
 	public:
+
+	static constexpr const size_t GetElementSize() {
+		return sizeof(BigNumElement);
+	}
+
 	#define MaxLengthOfAStringified_U64 (20)
 	#define MaxLengthOfAStringified_U32 (10)
 	#define MaxLengthOfAStringified_U16 (5)
@@ -268,10 +277,10 @@ struct BigNum {
 		if (LogicalSize < B.LogicalSize) {
 			if (MemoryCapacity < B.MemoryCapacity) {
 				ExpandTo(B.MemoryCapacity);
-			} memcpy(n, B.n, B.LogicalSize*BigNumElementSize);
+			} memcpy(n, B.n, B.LogicalSize*GetElementSize());
 		} else {
-			memcpy(n, B.n, B.LogicalSize*BigNumElementSize);
-			memset(n + B.LogicalSize, 0, (LogicalSize - B.LogicalSize)*BigNumElementSize);
+			memcpy(n, B.n, B.LogicalSize*GetElementSize());
+			memset(n + B.LogicalSize, 0, (LogicalSize - B.LogicalSize)*GetElementSize());
 		} LogicalSize = B.LogicalSize;
 	}
 
@@ -310,7 +319,7 @@ struct BigNum {
 			for (unsigned __int64 i = (Length - 1); i != U64Lim; i--) {
 				Temp.Set(S[i] - '0');
 				Temp.MultiplySelf(Ten);
-				Val.AddSelf(Temp);
+				Val.Add(Temp);
 				Ten.MultiplySelf(10);
 			}
 			Set(Val);
@@ -344,16 +353,20 @@ struct BigNum {
 		unsigned __int64 Index = 0;
 		std::string  Factor = "1";
 		std::string  LeftShiftBy =
-			#if BigNumElementSize == 1
-			"256"
-			#elif BigNumElementSize == 2
-			"65536"
-			#elif BigNumElementSize == 4
-			"4294967296"
-			#elif BigNumElementSize == 8
-			"18446744073709551616"
+
+
+			#ifndef BigNumElementSize
+				"18446744073709551616"
+			#else
+				#if BigNumElementSize == 1
+					"256"
+				#elif BigNumElementSize == 2
+					"65536"
+				#elif BigNumElementSize == 4
+					"4294967296"
+				#endif
 			#endif
-			;
+		;
 		std::string S = "0";
 		while (Index <= (LogicalSize - 1)) {
 			unsigned __int64 Val = n[Index++];
@@ -400,7 +413,7 @@ struct BigNum {
 
 
 	// a += b
-	void AddSelf(BigNumElement In) {
+	void Add(BigNumElement In) {
 		if (MemoryCapacity == 0) {
 			DebugBreak();
 		} if (this->n[0] > (MaxVal - In)) {
@@ -427,12 +440,12 @@ struct BigNum {
 
 
 	// BigNum a += b;
-	void AddSelf(BigNum B) {
+	void Add(BigNum B) {
 		if (!B.LogicalSize) DebugBreak();
 		if (B.LogicalSize > LogicalSize) {
 			ExpandTo(B.LogicalSize);
 		}
-		this->AddSelf(B.n[0]);
+		this->Add(B.n[0]);
 		for (unsigned __int64 i = 1; i < B.LogicalSize; i++) {
 			if (this->n[i] >(MaxVal - B.n[i])) {
 				this->n[i] += B.n[i];
@@ -454,20 +467,20 @@ struct BigNum {
 	}
 
 	//BigNum a = b + c
-	BigNum Add(BigNumElement In) {
-		BigNum R; R.Set(*this);
-		R.AddSelf(In);
+	static BigNum Add(BigNum A, BigNumElement In) {
+		BigNum R; R.Set(A);
+		R.Add(In);
 		return R;
 	}
 
-	BigNum Add(BigNum B) {
-		BigNum R; R.Set(*this);
-		R.AddSelf(B);
+	static BigNum Add(BigNum A, BigNum B) {
+		BigNum R; R.Set(A);
+		R.Add(B);
 		return R;
 	}
 
 	// b -= a
-	void SubtractSelf(BigNumElement In) {
+	void Subtract(BigNumElement In) {
 		if (LogicalSize == 0) {
 			DebugBreak(); // Can't subtract from an empty BigNum
 		} if (In > n[0]) {
@@ -491,13 +504,13 @@ struct BigNum {
 	}
 
 	// c = a - b
-	BigNum Subtract(BigNumElement In) {
-		BigNum R; R.Set(*this);
-		R.SubtractSelf(In);
+	static BigNum Subtract(BigNum A, BigNumElement In) {
+		BigNum R; R.Set(A);
+		R.Subtract(In);
 		return R;
 	}
 
-	void SubtractSelf(BigNum B) {
+	void Subtract(BigNum B) {
 
 		unsigned __int64 BLogicSize = B.LogicalSize;
 
@@ -528,14 +541,14 @@ struct BigNum {
 	}
 
 
-	BigNum Subtract(BigNum B) {
-		BigNum R; R.Set(*this);
-		R.SubtractSelf(B);
+	static BigNum Subtract(BigNum A, BigNum B) {
+		BigNum R; R.Set(A);
+		R.Subtract(B);
 		return R;
 	}
 
 	// b *= a
-	void MultiplySelf(BigNumElement In) {
+	void Multiply(BigNumElement In) {
 		if (In == 1) {
 			return;
 		} if (MemoryCapacity == 0) {
@@ -582,8 +595,8 @@ struct BigNum {
 	}
 
 	// c = b*a
-	BigNum Multiply(BigNumElement In) {
-		BigNum Result; Result.Set(*this);
+	static BigNum Multiply(BigNum B, BigNumElement In) {
+		BigNum Result; Result.Set(B);
 		Result.MultiplySelf(In);
 		return Result;
 	}
@@ -598,11 +611,10 @@ struct BigNum {
 							110 + 
 						   1100 
 						= 10101
-
 */
 
 	void MultiplySelf(BigNum B) {
-		constexpr unsigned __int64 Bits = 8*BigNumElementSize;
+		constexpr unsigned __int64 Bits = 8*GetElementSize();
 
 		BigNum OriginalValue; OriginalValue.Set(*this);
 		BigNum Added;
@@ -610,8 +622,8 @@ struct BigNum {
 		for (unsigned __int64 i = 1; i < (Bits - 1); i++) {
 			if ((Val >> i) & 1) {
 				Added.Set(OriginalValue);
-				Added.LShiftSelf(i);
-				this->AddSelf(Added);
+				Added.LShift(i);
+				this->Add(Added);
 			}
 		}
 		for (unsigned __int64 i = 1; i < B.LogicalSize; i++) {
@@ -619,14 +631,14 @@ struct BigNum {
 			for (unsigned __int64 j = 0; j < (Bits - 1); j++) {
 				if ((B.n[i] >> j) & 1) {
 					Added.Set(OriginalValue);
-					Added.LShiftSelf(j + i*Bits);
-					this->AddSelf(Added);
+					Added.LShift(j + i*Bits);
+					this->Add(Added);
 				}
 			}
 		}
 
 		if (!(B.n[0] & 1)) {
-			this->SubtractSelf(OriginalValue);
+			this->Subtract(OriginalValue);
 		}
 		OriginalValue.Clear();
 		Added.Clear();
@@ -634,25 +646,25 @@ struct BigNum {
 
 
 	// Does not alter the calling BigNum, so it's like a = b / c rather than b /= c.
-	BigNum Divide(BigNumElement In) {
+	static BigNum Divide(BigNum A, BigNumElement In) {
 		BigNum Result;
 		if (In == 0) {
 			DebugBreak(); // Divide by 0
 		} else if (In == 1) {
-			Result.Set(*this);
+			Result.Set(A);
 			return Result;
-		} if (LogicalSize == 1) {
-			BigNumElement Div = this->n[0]/In;
-			Result.AddSelf(Div);
+		} if (A.LogicalSize == 1) {
+			BigNumElement Div = A.n[0]/In;
+			Result.Add(Div);
 			return Result;
-		} else if (LogicalSize == 0) {
-			DebugBreak();
+		} else if (A.LogicalSize == 0) {
+			DebugBreak(); // The BigNum you're trying to divide is empty, probably from a wrongful Clear().
 		}
 
-		BigNum Temp(this->LogicalSize);
-		Temp.Set(*this);
+		BigNum Temp(A.LogicalSize);
+		Temp.Set(A);
 
-		constexpr unsigned __int64 Bits = 8*BigNumElementSize;
+		constexpr unsigned __int64 Bits = 8*GetElementSize();
 
 		struct SubtrahendPowers {
 			BigNumElement Upper, Lower;
@@ -669,7 +681,7 @@ struct BigNum {
 		unsigned __int64 Powers[Bits] = {0};
 		unsigned __int64 PowersIndex = 0;
 		unsigned __int64 Remainder = 0;
-		for (unsigned __int64 j = (LogicalSize - 1); j != U64Lim;) {
+		for (unsigned __int64 j = (A.LogicalSize - 1); j != U64Lim;) {
 
 			if (Remainder) {
 				unsigned __int64 i = FirstUpperVar;
@@ -711,19 +723,19 @@ struct BigNum {
 						for (unsigned __int64 k = 0; k < PowersIndex; k++) {
 							ToBeAdded += (1 << (Powers[k] % (Bits)));
 						}
-						Result.AddSelf(ToBeAdded);
-						Result.LShiftSelf(Bits);
+						Result.Add(ToBeAdded);
+						Result.LShift(Bits);
 					} else {
 						for (unsigned __int64 k = 0; k < PowersIndex; k++) {
-							Result.AddSelf(1 << (Powers[k]));
+							Result.Add(1 << (Powers[k]));
 						}
 					}
 				} else {
 					if ((j + 2) != Temp.LogicalSize) {
-						Result.LShiftSelf(Bits);
+						Result.LShift(Bits);
 					}
-				} memset(Powers, 0, Bits*sizeof(unsigned __int64));
-				PowersIndex = 0;
+				} //memset(Powers, 0, Bits*sizeof(unsigned __int64));
+				//PowersIndex = 0;
 			} else if (Temp.n[j] >= In) {
 				if (Temp.n[j] - In < In) {
 					Temp.n[j] -= In;
@@ -737,7 +749,7 @@ struct BigNum {
 					Powers[PowersIndex++] = j*Bits + i + 1;
 				}
 			} else if (Temp.n[j] == 0) {
-				Result.LShiftSelf(Bits);
+				Result.LShift(Bits);
 			}
 		}
 
@@ -746,13 +758,13 @@ struct BigNum {
 	}
 
 	// Does alter the calling BigNum, so it's like b /= c rather than a = b / c
-	void DivideSelf(BigNumElement In) {
-		BigNum R = Divide(In);
+	void Divide(BigNumElement In) {
+		BigNum R = Divide(*this, In);
 		Set(R);
 		R.Clear();
 	}
 
-	void LShiftSelf(unsigned __int64 By) {
+	void LShift(unsigned __int64 By) {
 		if (LogicalSize == 0) {
 			DebugBreak();
 		} else if (By == 0) {
@@ -762,7 +774,7 @@ struct BigNum {
 		unsigned long HighestBit = 0;
 		BitScanReverse64(&HighestBit, n[i]);
 		unsigned __int64 TotalShift = HighestBit + By;
-		constexpr unsigned __int64 Bits = 8*BigNumElementSize;
+		constexpr unsigned __int64 Bits = 8*GetElementSize();
 		unsigned __int64 AdditionalMemRequired = TotalShift / Bits;
 		if (AdditionalMemRequired > MemoryCapacity) {
 			ExpandTo(MemoryCapacity + AdditionalMemRequired);
@@ -792,7 +804,7 @@ struct BigNum {
 
 	BigNumElement PopBack() {
 		std::string S = ToString();
-		DivideSelf(10);
+		Divide(10);
 		return (BigNumElement) ((S.at(S.length() - 1)) - '0');
 	}
 	};
