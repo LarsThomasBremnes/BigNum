@@ -31,9 +31,9 @@ Made by Lars Thomas Bremnes
 
 struct BigNum {
 	private:
-	unsigned __int64		LogicalSize;
-	unsigned __int64		MemoryCapacity;
-	BigNumElement* n;
+	unsigned __int64	LogicalSize;
+	unsigned __int64	MemoryCapacity;
+	BigNumElement* 		n;
 
 
 
@@ -54,12 +54,12 @@ struct BigNum {
 	}
 
 	struct OverflowDiagnosis {
-		unsigned long			Bit1;
-		unsigned long			Bit2;
-		unsigned __int64		a;
-		BigNumElement	i;
-		BigNumElement	j;
-		BigNumElement	OverflownValue;
+		unsigned long		Bit1;
+		unsigned long		Bit2;
+		unsigned __int64	a;
+		BigNumElement		i;
+		BigNumElement		j;
+		BigNumElement		OverflownValue;
 
 		void FindIndexesOfSetBits(
 			BigNumElement Indexes[8*sizeof(BigNumElement)],
