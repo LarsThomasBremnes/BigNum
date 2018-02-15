@@ -381,8 +381,8 @@ struct BigNum {
 		return S;
 		}
 
-		// From (and including) Start, to (but not including) End. Treated as indices.
-		// Expands as necessary.
+	// From (and including) Start, to (but not including) End. Treated as indices.
+	// Expands as necessary.
 	void SetValOverRange(BigNumElement Val, unsigned __int64 Start, unsigned __int64 End) {
 		if (MemoryCapacity < (End)) {
 			ExpandTo(End + bignum_mem_expansion_slack::Slack);
