@@ -677,7 +677,6 @@ struct BigNum {
 		unsigned __int64 PowersIndex = 0;
 		unsigned __int64 Remainder = 0;
 		for (unsigned __int64 j = (A.LogicalSize - 1); j != U64Lim;) {
-
 			if (Remainder) {
 				unsigned __int64 i = FirstUpperVar;
 				for (; i < (Bits - 2); i++) { // optimistically try to find the largest subtrahend
@@ -747,7 +746,6 @@ struct BigNum {
 				Result.LShift(Bits);
 			}
 		}
-
 		Temp.Clear();
 		return Result;
 	}
@@ -802,4 +800,4 @@ struct BigNum {
 		Divide(10);
 		return (BigNumElement) ((S.at(S.length() - 1)) - '0');
 	}
-	};
+};
